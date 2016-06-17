@@ -1,0 +1,406 @@
+CREATE PROCEDURE [dbo].[Maintain_Invoice_Header]
+-- =============================================================================
+-- Author:    Dwain.C
+-- Create date: 15-Nov-2014
+-- Description: This is a template for an SP that maintains the header of an
+--              invoice document.  /* Comment blocks */ are explanations of the
+--              sections of the template and should be removed in a customized
+--              version of the template.
+-- =============================================================================
+(
+/*******************************************************************************
+    ** Parameters Section **
+   
+    Which includes:
+    - An @action variable that corresponds to form actions (buttons), along with
+        any other parameters such as the user that is performing the action,
+        which could be used to maintain a record of the person performing the
+        change.
+    - The filtering criteria (in this case @InvoiceNo), which could be more than
+        one form field, in which case either parameter must return a unique
+        result.
+    - The data values (form fields) which will be updated on that action.  Note
+        that this includes @InvoiceNo, which is required on save (if the invoice
+        exists) and delete.
+   
+    After the @action variable, default values for all parameters are defaulted
+    to NULL, because the SP will validate (audit) that appropriate values are
+    provided on each specific action.
+   
+    It is a best practice to call this SP using specified parameter names rather
+    than assuming that the positional placement won't change.
+   
+    Note that data parameters (including @InvoiceNo) should be identical to the
+    data types for the underlying table's columns, so that when you publish the
+    SP's call signature the developers know how that data is stored in the
+    front-end code.
+*******************************************************************************/
+    -- @action=0 Query, =1 Insert, =2 Update/save, =3 Delete
+    @action             TINYINT            
+    ,@InvoiceNo         VARCHAR(20)         = NULL
+    ,@InvoiceDate       DATE                = NULL
+    ,@CustomerID        VARCHAR(20)         = NULL
+    ,@CustomerName      VARCHAR(100)        = NULL
+    ,@CustomerAddr1     VARCHAR(100)        = NULL
+    ,@CustomerAddr2     VARCHAR(100)        = NULL
+    ,@CustomerZipcode   VARCHAR(10)         = NULL
+)
+AS BEGIN;
+    SET NOCOUNT ON;
+ 
+/*******************************************************************************
+    *** Declarations Section ***
+   
+    This includes some local control variables (@Error_Code and @Error_Message
+    will always be among them) and a table variable that is identical in format
+    to the underlying table we are maintaining, but without the PRIMARY KEY,
+    FOREIGN KEYS (or other constraints), which allows NULL values in any column.
+   
+    Note that for a table that has lots of columns, it is a good practice to use
+    SQL Server Management Studio (SSMS) to script the CREATE TABLE statement and
+    then edit that result down for the table variable to ensure that column data
+    types are consistent.
+*******************************************************************************/
+    DECLARE @Error_Code     INT             = 0   
+        ,@Error_Message     VARCHAR(MAX)
+        ,@NextInvoiceNo     BIGINT
+        ,@InvoicePrefix     VARCHAR(5);
+   
+    DECLARE @Invoice        TABLE
+    (
+        InvoiceNo           VARCHAR(20)     NULL
+        ,InvoiceDate        DATE            NULL
+        ,CustomerID         VARCHAR(20)     NULL
+        ,CustomerName       VARCHAR(100)    NULL
+        ,CustomerAddr1      VARCHAR(100)    NULL
+        ,CustomerAddr2      VARCHAR(100)    NULL
+        ,CustomerZipcode    VARCHAR(10)     NULL
+    );
+   
+/*******************************************************************************
+    *** Parameters Cleansing Section ***
+   
+    Convert blank values to NULL, transform any other values to something
+    appropriate for the @action, etc.
+*******************************************************************************/
+ 
+    -- Cleanse/transform the input parameters
+    SELECT @action          = CASE
+                                WHEN @action IN (0, 1, 2, 3) THEN @action
+                                ELSE -1
+                                END
+        -- Convert blanks passed to parameters to NULL
+        -- in case the developers didn't
+        ,@InvoiceNo         = NULLIF(@InvoiceNo, '')
+        ,@CustomerID        = NULLIF(@CustomerID, '')
+        ,@CustomerName      = NULLIF(@CustomerName, '')
+        ,@CustomerAddr1     = NULLIF(@CustomerAddr1, '')
+        ,@CustomerAddr2     = NULLIF(@CustomerAddr2, '')
+        ,@CustomerZipcode   = NULLIF(@CustomerZipcode, '');
+   
+/*******************************************************************************
+    *** Parameters Auditing Section ***
+   
+    Parameters auditing generally occur in these three parts in this sequence:
+   
+    1. Control audits: These audits are performed to make sure that appropriate
+        parameters are passed to the SP on the specific actions.  Generally in
+        a production application you would not see these messages returned to
+        the form, because they represent cases where the developer did not
+        call the SP correctly (so should be corrected during forms testing).
+    2. Simple data audits: Includes things like making sure required values
+        (NOT NULL in the database table) are provided, consistency checks
+        between data elements, i.e., anything that does not require a
+        validation against the database.  Another example is auditing a data
+        element against the CHECK constraint for the underlying column.
+    3. Complex data audits: These are any audits requiring validating
+        that a specified parameter is valid based on existing rows in other
+        table.  For example, making sure FOREIGN KEY constraints are met.
+   
+    It may be necessary in some cases to perform audits of typs 3 mixed in
+    with audits of type 2 when it is necessary to do several validations in a
+    specific sequence.  That is permissible, but generally when possible the
+    sequence should be adhered to.
+   
+    Always check that @Error_Code still equals zero before you perform the
+    next audit.  This is especially important for complex audits to avoid
+    multiple retrievals from the database (keeps the performance up).
+   
+    When commenting any particular audit, specify what the data should be, i.e.,
+    the opposite information from what the code audit performs (what the data
+    should not be).  This adds clarity.
+*******************************************************************************/
+ 
+/*******************************************************************************
+    *** Perform Type 1 (Control) audits
+*******************************************************************************/
+ 
+    -- After cleansing, @action should be 0,1,2,3
+    IF @Error_Code = 0 AND @action NOT IN (0, 1, 2, 3)
+        SELECT @Error_Code = 1;
+ 
+    -- @InvoiceNo required on query or delete
+    IF @Error_Code = 0 AND @action IN (0, 3) AND @InvoiceNo IS NULL
+        SELECT @Error_Code = 2;
+   
+    -- @InvoiceNo not allowed on insert (generated on save)
+    IF @Error_Code = 0 AND @action = 1 AND @InvoiceNo IS NOT NULL
+        SELECT @Error_Code = 3;
+ 
+    -- @CustomerID is required on insert
+    IF @Error_Code = 0 AND @action = 1 AND @CustomerID IS NULL
+        SELECT @Error_Code = 4;
+   
+/*******************************************************************************
+    *** Perform Type 2 (Simple Data) audits
+*******************************************************************************/
+ 
+    -- Validate required (NOT NULL) fields on update/save   
+    IF @Error_Code = 0 AND @action = 2 AND @InvoiceDate IS NULL         
+        SELECT @Error_Code = 5;
+    ELSE IF @Error_Code = 0 AND @action = 2 AND @CustomerID IS NULL     
+        SELECT @Error_Code = 6;
+    ELSE IF @Error_Code = 0 AND @action = 2 AND @CustomerName IS NULL   
+        SELECT @Error_Code = 7;
+    ELSE IF @Error_Code = 0 AND @action = 2 AND @CustomerAddr1 IS NULL  
+        SELECT @Error_Code = 8;
+    ELSE IF @Error_Code = 0 AND @action = 2 AND @CustomerZipcode IS NULL
+        SELECT @Error_Code = 9;
+ 
+/*******************************************************************************
+    *** Perform Type 3 (Complex Data) audits
+*******************************************************************************/
+ 
+    -- Check that the invoice exists
+    IF @Error_Code = 0 AND @InvoiceNo IS NOT NULL AND NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.Invoices
+            WHERE InvoiceNo = @InvoiceNo
+        ) SELECT @Error_Code = 10;
+ 
+    -- Confirm foreign key constraints before saving   
+    IF @Error_Code = 0 AND @CustomerID IS NOT NULL AND NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.Customers
+            WHERE CustomerID = @CustomerID
+        ) SELECT @Error_Code = 11;
+ 
+/*******************************************************************************
+    *** Actions Section ***
+   
+    This section processes each possible action the user can specify by a
+    button push on the form.
+   
+    Only process actions if @Error_Code = 0.
+   
+    Note that the Insert @action does not really put any data into the
+    underlying table.  All it does is populate default values for each column
+    for display on the form.
+   
+    The invoice number is not generated until a save action occurs.
+*******************************************************************************/
+ 
+    -- Perform the Query @action (=0)
+    IF @Error_Code = 0 AND @action = 0
+    -- Store query results in the table variable                      
+    INSERT INTO @Invoice
+    (
+        InvoiceNo, InvoiceDate, CustomerID, CustomerName
+        ,CustomerAddr1, CustomerAddr2, CustomerZipcode
+    )
+    SELECT InvoiceNo, InvoiceDate, CustomerID, CustomerName
+        ,CustomerAddr1, CustomerAddr2, CustomerZipcode
+    FROM dbo.Invoices
+    WHERE InvoiceNo = @InvoiceNo;
+ 
+    -- Perform the Insert @action (=1)
+    IF @Error_Code = 0 AND @action = 1                        
+    -- Store default values in the table variable                      
+    INSERT INTO @Invoice
+    (
+        InvoiceNo, InvoiceDate, CustomerID, CustomerName
+        ,CustomerAddr1, CustomerAddr2, CustomerZipcode
+    )
+    SELECT NULL, GETDATE(), CustomerID, CustomerName
+        ,CustomerAddr1, CustomerAddr2, CustomerZipcode
+    FROM dbo.Customers
+    WHERE CustomerID = @CustomerID;
+   
+    -- Perform the update (and actual Insert) and delete @actions (=2 and 3)
+    IF @Error_Code = 0 AND @action IN (2, 3)                   
+    BEGIN
+/*******************************************************************************
+    *** Additional Explanation for the Actions Section ***
+   
+    Below is the code that actually updates the underlying tables.  Always wrap
+    this in a TRANSACTION with appropriate error handling using TRY/CATCH.
+   
+    MERGE (available in SQL 2008 onwards), is quite useful to minimize the
+    number of actual SQL statements you need to write to maintain the
+    underlying table.
+   
+    The Counters table (or a SEQUENCE if you're using SQL 2012) generates the
+    next available invoice number when @InvoiceNo is NULL on save (basically
+    on an INSERT to the underlying table).  The UPDLOCK hint locks that row of
+    the table until the TRANSACTION completes, to avoid duplicate invoice
+    numbers.
+*******************************************************************************/
+        BEGIN TRANSACTION T1;
+       
+        BEGIN TRY;
+ 
+            IF @InvoiceNo IS NULL
+            -- Generate the next invoice number here
+            UPDATE dbo.Counters WITH(UPDLOCK)
+            SET @NextInvoiceNo  = CurrentValue = CurrentValue + 1
+                ,@InvoicePrefix = IDPrefix
+            WHERE CounterID = 'Invoices';
+ 
+            -- Cascade delete of the details
+            IF @action = 3
+            DELETE FROM dbo.Invoice_Details
+            WHERE InvoiceNo = @InvoiceNo;
+   
+            -- And now perform the save/delete (t=target table, s=source table)
+            MERGE dbo.Invoices t
+            USING
+            (
+                SELECT InvoiceNo        = ISNULL(@InvoiceNo, @InvoicePrefix +
+                                            CAST(YEAR(@InvoiceDate) AS CHAR(4))+
+                                            CAST(@NextInvoiceNo AS VARCHAR(20)))
+                    ,InvoiceDate        = @InvoiceDate
+                    ,CustomerID         = @CustomerID
+                    ,CustomerName       = @CustomerName
+                    ,CustomerAddr1      = @CustomerAddr1
+                    ,CustomerAddr2      = @CustomerAddr2
+                    ,CustomerZipcode    = @CustomerZipcode
+            ) s
+            ON s.InvoiceNo = t.InvoiceNo
+            WHEN MATCHED AND @action = 3
+            THEN DELETE
+            WHEN MATCHED AND @action = 2
+            THEN UPDATE
+                SET InvoiceNo           = s.InvoiceNo
+                    ,InvoiceDate        = s.InvoiceDate
+                    ,CustomerID         = s.CustomerID
+                    ,CustomerName       = s.CustomerName
+                    ,CustomerAddr1      = s.CustomerAddr1
+                    ,CustomerAddr2      = s.CustomerAddr2
+                    ,CustomerZipcode    = s.CustomerZipcode
+            WHEN NOT MATCHED
+            THEN INSERT
+            (
+                InvoiceNo, InvoiceDate, CustomerID, CustomerName
+                ,CustomerAddr1, CustomerAddr2, CustomerZipcode
+            )
+            VALUES
+            (
+                s.InvoiceNo, s.InvoiceDate, s.CustomerID, s.CustomerName
+                ,s.CustomerAddr1, s.CustomerAddr2, s.CustomerZipcode
+            )
+            -- Use OUTPUT to capture the updated results
+            -- Note that on DELETE, all of these values will be NULL
+            OUTPUT INSERTED.InvoiceNo, INSERTED.InvoiceDate, INSERTED.CustomerID
+                ,INSERTED.CustomerName, INSERTED.CustomerAddr1
+                ,INSERTED.CustomerAddr2, INSERTED.CustomerZipcode
+            INTO @Invoice;
+       
+        END TRY
+       
+        BEGIN CATCH;
+            -- Some basic error handling
+            SELECT @Error_Code  = ERROR_NUMBER()
+                ,@Error_Message = ERROR_MESSAGE();
+            PRINT 'Merge to Invoices table';
+ 
+            -- Useful information for debugging           
+            PRINT 'ERROR_NUMBER() '+   CAST(ERROR_NUMBER()    AS VARCHAR(10));
+            PRINT 'ERROR_SEVERITY() '+ CAST(ERROR_SEVERITY()  AS VARCHAR(10));
+            PRINT 'ERROR_STATE() '+    CAST(ERROR_STATE()       AS VARCHAR(10));
+            PRINT 'ERROR_PROCEDURE() '+CAST(ERROR_PROCEDURE() AS VARCHAR(8000));
+            PRINT 'ERROR_LINE() '+     CAST(ERROR_LINE()        AS VARCHAR(100));
+            PRINT 'ERROR_MESSAGE() '+  CAST(ERROR_MESSAGE()   AS VARCHAR(8000));
+            PRINT 'XACT_STATE() '+     CAST(XACT_STATE()      AS VARCHAR(5));
+        END CATCH;
+       
+        IF @Error_Code <> 0 OR XACT_STATE() = -1 ROLLBACK TRANSACTION T1;
+        ELSE IF @Error_Code = 0 AND XACT_STATE() = 1 COMMIT TRANSACTION T1;
+    END;
+ 
+/*******************************************************************************
+    *** Returned Tables Section ***
+   
+    The table names you can reference in the front-end code.
+   
+    In this case:
+   
+    1. ReturnErrors - an error message suitable for display on the form
+    2. InvoiceHeader - All columns needed to refresh all form fields in the
+        invoice header.
+    3. InvoiceDetails - All columns needed to refresh all fields in the grid
+        showing the invoice details.
+*******************************************************************************/
+ 
+    -- This SP returns 3 tables to the front end:
+    -- ReturnErrors
+    -- InvoiceHeader
+    -- InvoiceHeader
+ 
+    -- ReturnErrors: whether the action was successful
+    WITH ReturnErrors (ErrorCode, ErrorMessage) AS
+    (
+        SELECT           0,  'Requested Operation Successful'
+        -- Audit failures 
+        UNION ALL SELECT 1,  'Invalid action specified'
+        UNION ALL SELECT 2,  'Invoice number is required for this action'
+        UNION ALL SELECT 3,  'Invoice number is not allowed for this action'
+        UNION ALL SELECT 4,  'Customer ID is required for this action'
+        UNION ALL SELECT 5,  'Not saved - Invoice date is required'
+        UNION ALL SELECT 6,  'Not saved - Customer ID is required'
+        UNION ALL SELECT 7,  'Not saved - Customer name is required'
+        UNION ALL SELECT 8,  'Not saved - Customer address is required'
+        UNION ALL SELECT 9,  'Not saved - Customer zipcode is required'
+        UNION ALL SELECT 10, 'Specified invoice number does not exist'
+        UNION ALL SELECT 11, 'Specified customer ID does not exist'
+        UNION ALL
+        -- For this case @Error_Code contains a SQL error (e.g., deadlock)
+        SELECT @Error_Code, @Error_Message
+        WHERE @Error_Code NOT BETWEEN 0 AND 11 
+        -- End of the BETWEEN range must correspond to the number of audit
+        -- failure error messages above             
+    )
+    SELECT ErrorCode, RequestedAction=@action, ErrorMessage
+    FROM ReturnErrors ReturnErrors
+    WHERE @Error_Code = ErrorCode;
+ 
+    -- InvoiceHeader: Return the invoice header or
+    -- nothing if there’s an error or when action is to delete
+    SELECT InvoiceNo, InvoiceDate, CustomerID, CustomerName
+        ,CustomerAddr1, CustomerAddr2, CustomerZipcode
+    FROM @Invoice InvoiceHeader
+    WHERE @Error_Code = 0 AND @action <> 3;
+ 
+    -- InvoiceDetails Return the invoice details
+    -- InvoiceLineNo is for display in the grid
+    SELECT InvoiceNo, LineItem, InvoiceLineNo, ItemNo, ItemDescription
+        ,Quantity, Price, ExtendedPrice
+    FROM
+    (
+        SELECT InvoiceNo, LineItem
+            ,InvoiceLineNo          = ROW_NUMBER() OVER (ORDER BY LineItem)
+            ,a.ItemNo
+            ,ItemDescription        = b.ItemDesc
+            ,Quantity, Price
+            ,ExtendedPrice
+        FROM dbo.Invoice_Details a
+        JOIN dbo.Items b
+        ON a.ItemNo = b.ItemNo
+        WHERE InvoiceNo = ISNULL(@InvoiceNo, @InvoicePrefix +
+                            CAST(YEAR(@InvoiceDate) AS CHAR(4)) +
+                            CAST(@NextInvoiceNo AS VARCHAR(20)))
+    ) InvoiceDetails
+    WHERE @Error_Code = 0;
+ 
+END;
