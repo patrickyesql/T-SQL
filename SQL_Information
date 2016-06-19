@@ -4,3 +4,9 @@ FROM AdventureWorksdw2012.INFORMATION_SCHEMA.COLUMNS
 WHERE TABLE_NAME = N'FactInternetSales';  
 GO  
 
+--Displays the definition of a user-defined rule, default, unencrypted Transact-SQL stored procedure, 
+--user-defined Transact-SQL function, trigger, computed column, CHECK constraint, view, 
+--or system object such as a system stored procedure.
+--Alt+F1 will do the same
+sp_helptext [ @objname = ] 'name' [ , [ @columnname = ] computed_column_name ]  
+
