@@ -1,13 +1,28 @@
+--PHYSICAL
+
+--index fragmentation
+USE AdventureWorks2012;  
+GO  
+SELECT * FROM sys.dm_db_index_physical_stats  
+    (DB_ID(N'Test'), OBJECT_ID(N'Person.Address'), NULL, NULL , 'DETAILED');  
+GO
+
 --check database file group usage
 SELECT file_id, name, type_desc, physical_name, size, max_size
 FROM sys.database_files ;
 
---rename a table
-exec sp_rename 'dbo.sheet1$', 'dbo.stage_1';
+--lookup dependencies
+SELECT referencing_schema_name, referencing_entity_name,
+referencing_id, referencing_class_desc, is_caller_dependent
+FROM sys.dm_sql_referencing_entities ('YourObject', 'OBJECT');
+GO
 
 --return the definition of an object 
 EXEC sp_helptext 'OBJECT_NAME';
 --Alt+F1 will do the same
+
+--rename a table
+exec sp_rename 'dbo.sheet1$', 'dbo.stage_1';
 
 --refresh view
 EXEC sp_refreshview;
