@@ -17,10 +17,6 @@ referencing_id, referencing_class_desc, is_caller_dependent
 FROM sys.dm_sql_referencing_entities ('YourObject', 'OBJECT');
 GO
 
---return the definition of an object 
-EXEC sp_helptext 'OBJECT_NAME';
---Alt+F1 will do the same
-
 --rename a table
 exec sp_rename 'dbo.sheet1$', 'dbo.stage_1';
 
