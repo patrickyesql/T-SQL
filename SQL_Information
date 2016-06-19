@@ -10,3 +10,9 @@ GO
 --Alt+F1 will do the same
 sp_helptext [ @objname = ] 'name' [ , [ @columnname = ] computed_column_name ]  
 
+
+--Lookup dependencies
+SELECT referencing_schema_name, referencing_entity_name,
+referencing_id, referencing_class_desc, is_caller_dependent
+FROM sys.dm_sql_referencing_entities ('YourObject', 'OBJECT');
+GO
