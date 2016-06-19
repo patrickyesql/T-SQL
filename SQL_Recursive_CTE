@@ -1,0 +1,75 @@
+use AdventureWorks2012DW
+go
+
+with E_RCTE (Employee_ID,Name,Department,Title,ParentEmployeeKey,ParentEmployeeName)
+as
+(select e1.EmployeeKey,e1.FirstName+', '+e1.Lastname,e1.DepartmentName,e1.Title,e2.EmployeeKey,e2.FirstName+', '+e2.Lastname
+from dbo.dimemployee e1
+inner join
+dbo.dimemployee e2
+on e1.parentemployeekey=e2.employeekey
+where e1.status='current' and e2.status='current'
+)
+select * from E_RCTE
+
+select * from dimemployee;
+
+select e1.EmployeeKey,e1.FirstName+', '+e1.Lastname,e1.DepartmentName,e1.Title,e2.EmployeeKey,e2.FirstName+', '+e2.Lastname
+from dbo.dimemployee e1
+inner join
+dbo.dimemployee e2
+on e1.parentemployeekey=e2.employeekey
+where e1.CurrentFlag=1 and e2.CurrentFlag=1
+order by 1;
+
+with E_RCTE (Employee_ID,Name,Department,Title,ParentEmployeeKey,ParentEmployeeName,Level,RootID)
+as
+(
+--Root
+select e1.EmployeeKey,e1.FirstName+', '+e1.Lastname,e1.DepartmentName,e1.Title,e2.EmployeeKey,e2.FirstName+', '+e2.Lastname,1,rootid=e1.EmployeeKey
+from dbo.dimemployee e1
+left join
+dbo.dimemployee e2
+on e1.parentemployeekey=e2.employeekey
+where (e1.currentflag=1 and e2.employeekey is null)
+UNION ALL
+--Recursive Join
+select e3.employeekey,e3.FirstName+', '+e3.Lastname,e3.DepartmentName,e3.Title,c.Employee_ID,c.Name,c.level+1,c.rootid
+from dbo.dimemployee e3
+inner join
+E_RCTE c
+on e3.ParentEmployeeKey=c.Employee_ID
+where e3.currentflag=1 
+)
+select * from E_RCTE 
+
+with E_RCTE (Employee_ID,Name,Department,Title,ParentEmployeeKey,ParentEmployeeName,Level,RootID)
+as
+(
+--Root
+select e1.EmployeeKey,e1.FirstName+', '+e1.Lastname,e1.DepartmentName,e1.Title,e2.EmployeeKey,e2.FirstName+', '+e2.Lastname,1,rootid=e1.EmployeeKey
+from dbo.dimemployee e1
+left join
+dbo.dimemployee e2
+on e1.parentemployeekey=e2.employeekey
+where (e1.currentflag=1 and (e2.currentflag=1 or e2.employeekey is null))
+UNION ALL
+--Recursive Join
+select e3.employeekey,e3.FirstName+', '+e3.Lastname,e3.DepartmentName,e3.Title,c.Employee_ID,c.Name,c.level+1,c.rootid
+from dbo.dimemployee e3
+inner join
+E_RCTE c
+on e3.ParentEmployeeKey=c.Employee_ID
+where e3.currentflag=1 
+)
+select rootid, count(rootid) -1 as Count 
+into #Count_Employee_Tree
+from E_RCTE 
+group by rootid;
+
+select e1.EmployeeKey,e1.FirstName+', '+e1.Lastname,e1.DepartmentName,e1.Title,c2.Count
+from dimemployee e1
+inner join
+#Count_Employee_Tree c2
+on e1.employeekey=c2.rootid
+where count>0;
