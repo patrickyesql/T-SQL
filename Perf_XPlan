@@ -17,10 +17,19 @@ SET STATISTICS IO, TIME OFF;
 
 --Query Running Plan Cache
 SELECT * FROM sys.dm_exec_requests
-CROSS APPLY sys.dm_exec_query_plan(plan_handle);
+CROSS APPLY sys.dm_exec_query_plan(plan_handle)
+CROSS APPLY  sys.dm_exec_sql_text(sql_handle);
 
 --Query Cached Plans
 SELECT * FROM sys.dm_exec_query_stats
-CROSS APPLY sys.dm_exec_query_plan(plan_handle);
+CROSS APPLY sys.dm_exec_query_plan(plan_handle)
+CROSS APPLY  sys.dm_exec_sql_text(sql_handle);
+
+--Clean Cache
+DBCC FREEPROCCACHE
+DBCC DROPCLEANBUFFERS
+
+
+
 
 
