@@ -1,0 +1,5 @@
+--Rebuild
+Alter Index ... Rebuild
+
+--Reorganize
+Alter Index Reorganize
