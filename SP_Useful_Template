@@ -1,0 +1,36 @@
+--Way to avoid missing input parameters
+
+if object_id(N'dbo.uspGetAddress') is not null
+drop PROCEDURE dbo.uspGetAddress
+go
+CREATE PROCEDURE dbo.uspGetAddress @City nvarchar(30) = NULL, @AddressLine1 nvarchar(60) = NULL
+AS
+SELECT *
+FROM Person.Address
+WHERE City = ISNULL(@City,City)
+AND AddressLine1 LIKE '%' + ISNULL(@AddressLine1 ,AddressLine1) + '%'
+GO
+---------ERROR HANDLING-------------
+if object_id(N'dbo.uspTryCatchTest','P') is not null
+drop PROCEDURE dbo.uspTryCatchTest
+go
+
+CREATE PROCEDURE dbo.uspTryCatchTest
+AS
+BEGIN TRY
+    SELECT 1/0
+END TRY
+BEGIN CATCH
+INSERT into dbo.ErrorHandling_Table
+    SELECT ERROR_NUMBER() AS ErrorNumber
+     ,ERROR_SEVERITY() AS ErrorSeverity
+     ,ERROR_STATE() AS ErrorState
+     ,ERROR_PROCEDURE() AS ErrorProcedure
+     ,ERROR_LINE() AS ErrorLine
+     ,ERROR_MESSAGE() AS ErrorMessage;
+END CATCH
+select * from dbo.ErrorHandling_table;
+select count(*) from dbo.ErrorHandling_Table;
+go
+
+exec dbo.uspTryCatchTest
