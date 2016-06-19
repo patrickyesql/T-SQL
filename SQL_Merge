@@ -1,0 +1,25 @@
+MERGE into BookInventory bi
+USING BookOrder bo
+ON bi.TitleID = bo.TitleID
+--can implement multiple when matched/ not matched within a single merge statement
+WHEN MATCHED AND
+  bi.Quantity + bo.Quantity = 0 THEN
+  DELETE
+WHEN MATCHED THEN
+  UPDATE
+  SET bi.Quantity = bi.Quantity + bo.Quantity
+WHEN NOT MATCHED BY TARGET and bo.quantity >0 THEN
+  INSERT (TitleID, Title, Quantity)
+  VALUES (bo.TitleID, bo.Title,bo.Quantity)
+WHEN NOT MATCHED BY SOURCE
+  AND bi.Quantity = 0 THEN
+  DELETE
+OUTPUT-- output $action only available with merge statement
+    $action,
+    DELETED.TitleID,
+    INSERTED.TitleID,
+    DELETED.Title,
+    INSERTED.Title,
+    DELETED.Quantity,
+    INSERTED.Quantity
+  INTO @MergeOutput; --output into similar to insert into
