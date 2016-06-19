@@ -15,4 +15,4 @@ WHERE object_id=OBJECT_ID('tablename')
 
 --Update stats
 --with fullscan
-UPDATE STATISTICS Person.Address WITH	FULLSCAN;
+UPDATE STATISTICS Person.Address WITH	FULLSCAN [,Columns,Index];
