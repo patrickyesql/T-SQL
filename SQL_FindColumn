@@ -1,0 +1,31 @@
+USE adventureworks2012
+GO
+----Lookup Columns----
+
+DROP TABLE #data
+
+SELECT
+TableView = N4.name+'.'+ISNULL (N2.Name, N3.Name)
+,ObjectView =
+CASE
+WHEN N2.Name IS NOT NULL
+THEN 'Table'
+ELSE 'View'
+END
+,ColName = N1.Name
+INTO #data
+FROM sys.columns N1
+LEFT JOIN sys.tables N2
+ON N1.object_id = N2.object_id
+LEFT JOIN sys.views N3
+ON N1.object_id = N3.object_id
+left join sys.schemas N4
+on (N2.schema_id=N4.schema_id) or (N3.schema_id=N4.schema_id)
+
+WHERE N2.object_id IS NOT NULL
+OR N3.object_id IS NOT NULL
+ORDER BY TableView
+
+SELECT *
+FROM #data
+WHERE ColName LIKE '%salespersonid%'
