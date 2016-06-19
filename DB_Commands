@@ -1,0 +1,13 @@
+--check database file group usage
+SELECT file_id, name, type_desc, physical_name, size, max_size
+FROM sys.database_files ;
+
+--rename a table
+exec sp_rename 'dbo.sheet1$', 'dbo.stage_1';
+
+--return the definition of an object 
+EXEC sp_helptext 'OBJECT_NAME';
+--Alt+F1 will do the same
+
+--refresh view
+EXEC sp_refreshview;
