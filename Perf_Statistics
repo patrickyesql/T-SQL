@@ -1,0 +1,18 @@
+--Create Statistics
+USE AdventureWorks2012
+CREATE STATISTICS stat1 ON Production.Product(ProductID);
+
+--Drop Statistics
+USE AdventureWorks2012
+Drop STATISTICS Production.Product.stat1;
+
+--DBCC Show Statistics
+DBCC SHOW_STATISTICS('tablename',columnname)
+
+--dmv stats associated with a table
+SELECT * FROM sys.stats
+WHERE object_id=OBJECT_ID('tablename')
+
+--Update stats
+--with fullscan
+UPDATE STATISTICS Person.Address WITH	FULLSCAN;
