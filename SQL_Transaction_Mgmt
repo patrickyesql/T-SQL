@@ -1,0 +1,11 @@
+SET TRANSACTION ISOLATION LEVEL  
+    { READ UNCOMMITTED  
+    | READ COMMITTED  
+    | REPEATABLE READ  
+    | SNAPSHOT  
+    | SERIALIZABLE  
+    }  
+[ ; ]  
+
+Xact_State(): returns int to indicate whether a transaction is open-failed/open-succeeded
+SET XACT_ABORT ON/OFF
