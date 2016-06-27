@@ -1,0 +1,106 @@
+--AUTO: column become attributes
+USE AdventureWorks2014
+GO
+SELECT
+productid,name,productnumber,listprice,modifieddate
+FROM production.Product
+FOR XML AUTO
+
+/*<production.Product productid="1" name="Adjustable Race" productnumber="AR-5381" listprice="0.0000" modifieddate="2014-02-08T10:01:36.827" />
+<production.Product productid="2" name="Bearing Ball" productnumber="BA-8327" listprice="0.0000" modifieddate="2014-02-08T10:01:36.827" />
+<production.Product productid="3" name="BB Ball Bearing" productnumber="BE-2349" listprice="0.0000" modifieddate="2014-02-08T10:01:36.827" />
+<production.Product productid="4" name="Headset Ball Bearings" productnumber="BE-2908" listprice="0.0000" modifieddate="2014-02-08T10:01:36.827" />
+<production.Product productid="316" name="Blade" productnumber="BL-2036" listprice="0.0000" modifieddate="2014-02-08T10:01:36.827" />*/
+
+--PATH: column become elements, entire document enclosed in root
+SELECT
+productid,name,productnumber,listprice,modifieddate
+FROM production.Product
+FOR XML PATH ('Product'), ROOT('Products')
+/*<Products>
+  <Product>
+    <productid>1</productid>
+    <name>Adjustable Race</name>
+    <productnumber>AR-5381</productnumber>
+    <listprice>0.0000</listprice>
+    <modifieddate>2014-02-08T10:01:36.827</modifieddate>
+  </Product>
+  <Product>
+    <productid>2</productid>
+    <name>Bearing Ball</name>
+    <productnumber>BA-8327</productnumber>
+    <listprice>0.0000</listprice>
+    <modifieddate>2014-02-08T10:01:36.827</modifieddate>
+  </Product>
+  </Products>*/
+
+  --hierachical structured XML, as [@attribute] to convert to attributes
+SELECT
+productid AS [@ProductID], --display as attributes
+name AS [ProductInfo/ProducName],
+productnumber AS [ProductInfo/ProducNumber],
+listprice,
+modifieddate
+FROM production.Product
+FOR XML PATH ('Product'), ROOT('Products')
+/*<Products>
+  <Product ProductID="1">
+    <ProductInfo>
+      <ProducName>Adjustable Race</ProducName>
+      <ProducNumber>AR-5381</ProducNumber>
+    </ProductInfo>
+    <listprice>0.0000</listprice>
+    <modifieddate>2014-02-08T10:01:36.827</modifieddate>
+  </Product>
+  <Product ProductID="2">
+    <ProductInfo>
+      <ProducName>Bearing Ball</ProducName>
+      <ProducNumber>BA-8327</ProducNumber>
+    </ProductInfo>
+    <listprice>0.0000</listprice>
+    <modifieddate>2014-02-08T10:01:36.827</modifieddate>
+  </Product>
+  </Products>*/
+  --Below 2 are almost identical
+  SELECT 
+  PSC.ProductSubcategoryID AS [@ProductSubcategoryID],
+  PSC.Name AS [@Name]
+  FROM production.ProductSubcategory PSC
+  FOR XML PATH ('Subcategory'), ROOT ('Subcategories')
+
+   SELECT 
+  PSC.ProductSubcategoryID,
+  PSC.Name
+  FROM production.ProductSubcategory PSC
+  FOR XML auto, ROOT ('Subcategories')
+
+  -- Nested 
+  SELECT 
+  PSC.ProductSubcategoryID AS [@ProductSubcategoryID],
+  PSC.Name AS [@Name],
+  (
+  SELECT ----------Must include
+	productid,name,productnumber,listprice,modifieddate
+	FROM production.Product p
+	WHERE p.ProductSubcategoryID=psc.ProductSubcategoryID
+	FOR XML auto, type
+  )
+  FROM production.ProductSubcategory PSC
+  FOR XML PATH ('Subcategory'), ROOT ('Subcategories')
+
+
+  --XML Variable
+  DECLARE @x XML
+  SET @x=  (SELECT 
+  PSC.ProductSubcategoryID AS [@ProductSubcategoryID],
+  PSC.Name AS [@Name],
+  (
+  SELECT ----------Must include
+	productid,name,productnumber,listprice,modifieddate
+	FROM production.Product p
+	WHERE p.ProductSubcategoryID=psc.ProductSubcategoryID
+	FOR XML auto, type
+  )
+  FROM production.ProductSubcategory PSC
+  FOR XML PATH ('Subcategory'), ROOT ('Subcategories'))
+  SELECT @x
