@@ -1,0 +1,71 @@
+USE AdventureWorks2014
+GO
+DECLARE @x XML;
+--bulk load xml file data as a single cell data
+SELECT @x=P
+FROM OPENROWSET(BULK 'C:\Users\Administrator\Desktop\XML\Products.xml',SINGLE_BLOB) 
+AS products(p);
+--use SP to prepare handle for the xml file
+DECLARE @hdoc int
+EXEC sp_xml_preparedocument @hdoc OUTPUT, @x
+--use openxml function/with to select xml attributes or elements into a table
+SELECT * FROM OPENXML (@hdoc,'/Subcategories/Subcategory',1)--1 attributes 2 elements
+WITH (
+ProductSubcategoryID INT,
+Name VARCHAR (100)
+)
+--Cleans xml file in memory
+EXEC sp_xml_removedocument @hdoc
+
+--2
+IF OBJECT_ID('tempdb..#temp_data','U') IS NOT NULL	
+DROP TABLE #temp_data;
+DECLARE @x XML;
+--bulk load xml file data as a single cell data
+SELECT @x=P
+FROM OPENROWSET(BULK 'C:\Users\Administrator\Desktop\XML\Products.xml',SINGLE_BLOB) 
+AS products(p);
+--use SP to prepare handle for the xml file
+DECLARE @hdoc int
+EXEC sp_xml_preparedocument @hdoc OUTPUT, @x
+--use openxml function/with to select xml attributes or elements into a table
+SELECT *
+INTO #temp_data
+FROM OPENXML (@hdoc,'/Subcategories/Subcategory/p',1)--1 attributes 2 elements 3 mixed mode
+WITH (
+productid INT, ---case sensitive must be matched to the attributes
+name VARCHAR (100),
+productnumber VARCHAR(100),
+listprice FLOAT,
+modifieddate datetime
+)
+--Cleans xml file in memory
+EXEC sp_xml_removedocument @hdoc
+SELECT * FROM #temp_data
+
+--3
+IF OBJECT_ID('tempdb..#temp_data','U') IS NOT NULL	
+DROP TABLE #temp_data;
+DECLARE @x XML;
+--bulk load xml file data as a single cell data
+SELECT @x=P
+FROM OPENROWSET(BULK 'C:\Users\Administrator\Desktop\XML\Products.xml',SINGLE_BLOB) 
+AS products(p);
+--use SP to prepare handle for the xml file
+DECLARE @hdoc int
+EXEC sp_xml_preparedocument @hdoc OUTPUT, @x
+--use openxml function/with to select xml attributes or elements into a table
+SELECT *
+INTO #temp_data
+FROM OPENXML (@hdoc,'/Subcategories/Subcategory/p',1)--1 attributes 2 elements 3 mixed mode
+WITH (
+ProductSubcategoryID INT '../@ProductSubcategoryID', --query from multiple levels
+productid INT, ---case sensitive must be matched to the attributes
+name VARCHAR (100),
+productnumber VARCHAR(100),
+listprice FLOAT,
+modifieddate datetime
+)
+--Cleans xml file in memory
+EXEC sp_xml_removedocument @hdoc
+SELECT * FROM #temp_data
