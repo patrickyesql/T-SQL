@@ -1,0 +1,17 @@
+CREATE DATABASE [TechBrothersIT] CONTAINMENT = NONE ON PRIMARY (
+    NAME = N'TechBrothersIT'
+    ,FILENAME = N'C:\PrimaryDBFiles\TechBrothersIT.mdf'
+    ,SIZE = 1048576 KB
+    ,FILEGROWTH = 2062336 KB
+    )
+    ,FILEGROUP [IndexFileGroup] (
+    NAME = N'TechBrothersIT_Index'
+    ,FILENAME = N'C:\IndexDBFiles\TechBrothersIT_Index.ndf'
+    ,SIZE = 1048576 KB
+    ,FILEGROWTH = 1048576 KB
+    ) LOG ON (
+    NAME = N'TechBrothersIT_log'
+    ,FILENAME = N'C:\LogDBFiles\TechBrothersIT_log.ldf'
+    ,SIZE = 1048576 KB
+    ,FILEGROWTH = 2062336 KB
+    )
