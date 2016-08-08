@@ -8,3 +8,6 @@ Parameter meansings
 If you would like to use User Name and password, you can use -U for user name and -P for password.
 
 -d The name of the SQL Server Database to connect to.
+
+-----if need to create a shortcut to the server with windows authentication
+https://www.mssqltips.com/sqlservertip/3250/connect-to-sql-servers-in-another-domain-using-windows-authentication/
