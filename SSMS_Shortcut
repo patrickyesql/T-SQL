@@ -1,0 +1,10 @@
+-s .  -E -d TestDB1
+
+Parameter meansings
+-s The name of the SQL Server Instance to connect to (after -s, I provided Dot(.) that means I would like to connect to my default SQL server Instance. I could have provided Named SQL Server Instance if want to.
+
+-E User Windows Authentication to login to SQL Server.
+
+If you would like to use User Name and password, you can use -U for user name and -P for password.
+
+-d The name of the SQL Server Database to connect to.
