@@ -1,0 +1,17 @@
+To create Schema in Database with default owner that is dbo, you can use below script.
+
+--DatabaseName=TechBrothersIT
+USE [TechBrothersIT]
+GO
+--Create Schema Name =TB
+CREATE SCHEMA [TB]
+GO
+
+Let's say If I have a user in TechbrothersIT Database with name [aamir] and I would like to create Schema TB with owner name =[aamir]. I can use below script.
+
+--Database Name = TechBrothersIT
+USE [TechBrothersIT]
+GO
+--Create Schema TB with owner name =Aamir ( Database User)
+CREATE SCHEMA [TB] AUTHORIZATION [aamir]
+GO
