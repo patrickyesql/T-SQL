@@ -12,3 +12,4 @@ CREATE TABLE Customer (
             THEN 1
         ELSE 0
         END
+)
