@@ -1,0 +1,14 @@
+CREATE TABLE Customer (
+    CustomerId INT Identity(1, 1)
+    ,FirstName VARCHAR(50)
+    ,LastName VARCHAR(50)
+    ,Age SMALLINT
+    ,PhoneNumber CHAR(9)
+    ,DOB DATE
+    ,Gender CHAR(1)
+    ,FullName AS FirstName + ' ' + LastName
+    ,IsSenior AS CASE 
+        WHEN Age > 65
+            THEN 1
+        ELSE 0
+        END
