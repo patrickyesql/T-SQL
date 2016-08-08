@@ -1,0 +1,19 @@
+Rename Table in SQL Server:
+
+You can use system Stored Procedure to rename Table in SQL Server.
+
+sp_rename 'OldTableName' , 'NewTableName'
+
+Let's rename our Customer table to USCustomer by using sp_rename Stored Procedure.
+
+EXEC sp_rename 'Customer','USCustomer'
+
+
+Rename Column in SQL Server Table:
+To Rename column in SQL Server Table, we can use the sp_rename system Stored Procedure as well. The only thing we have to add it to is 'Column' Parameter at the end.
+
+sp_rename 'TableName.OldColumnName' , 'NewColumnName' ,  'Column'
+
+Let's use sp_rename to change Column Name from Sex to Gender in dbo.Customer Table.
+
+EXEC sp_rename 'Customer.Sex','Gender', 'Column'
