@@ -2,4 +2,33 @@ SELECT DB_Name() AS DBName
     ,Schema_Name(Schema_id) AS TableSchema
     ,Object_name(parent_object_id) AS TableName
     ,DEFINITION
+    ,CASE 
+        WHEN is_disabled = 0
+            THEN 'NO'
+        ELSE 'YES'
+        END AS IsDisabled
 FROM sys.check_constraints
+
+---Disable all
+ Select DB_Name() AS DBName,
+ Schema_Name(Schema_id) AS TableSchema,
+ Object_name(parent_object_id) as TableName,
+  definition,
+  'Alter Table [' + Schema_Name(Schema_id) 
+    + '].[' + Object_name(parent_object_id) 
+    + ']' + ' NOCHECK  CONSTRAINT ' 
+    + '[' + NAME + ']' AS DisableCheckConstraint
+ From sys.check_constraints
+ where is_disabled=0
+ 
+ --Enable all
+  Select DB_Name() AS DBName,
+ Schema_Name(Schema_id) AS TableSchema,
+ Object_name(parent_object_id) as TableName,
+  definition,
+  'Alter Table [' + Schema_Name(Schema_id) 
+    + '].[' + Object_name(parent_object_id) 
+    + ']' + ' CHECK  CONSTRAINT ' 
+    + '[' + NAME + ']' AS EnableCheckConstraint
+ From sys.check_constraints
+ where is_disabled=1
