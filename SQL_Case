@@ -1,0 +1,40 @@
+Create table dbo.Customer
+ (Id int,
+  FName VARCHAR(50),
+  LName VARCHAR(50),
+  CountryShortName CHAR(2))
+GO
+insert into dbo.Customer
+Values (
+1,'Raza','M','PK'),
+(2,'Rita','John','US'),
+(3,'Sukhi','Singh',Null)
+
+1) You can use Column Name for which you want to check the values right after Case as shown below. Then write all the conditions on that column and finally use End as NewColumnName
+
+Select 
+FName,
+LName,
+CountryShortName,
+Case CountryShortName
+When 'Pk' Then 'Pakistan'
+When 'US' Then 'United States of America'
+When 'IN' Then 'India'
+Else 'Not Provided' 
+End AS CountryFullName
+From dbo.Customer
+
+2) Don't use Column Name right after Case keyword
+You can also write the case statement as shown below. In below example, we did not write Column Name right after Case. In this case we have to type column after every When. This way of writing is used when you want to check conditions for multiple columns or range of values.
+
+Select 
+FName,
+LName,
+CountryShortName,
+Case 
+When CountryShortName='Pk' Then 'Pakistan'
+When CountryShortName='US' Then 'United States of America'
+When CountryShortName='IN' Then 'India'
+Else 'Not Provided' 
+End AS CountryFullName
+From dbo.Customer
