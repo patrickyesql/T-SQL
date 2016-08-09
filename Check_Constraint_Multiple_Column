@@ -1,0 +1,21 @@
+CREATE TABLE dbo.Customer (
+    CustomerId INT identity(1, 1)
+    ,NAME VARCHAR(100)
+    ,Age INT
+    ,AgeType VARCHAR(15)
+    ,CONSTRAINT dbo_Customer_AgeAndAgeType CHECK (
+        (
+            Age <= 17
+            AND AgeType = 'Child'
+            )
+        OR (
+            Age > 17
+            AND Age < 65
+            AND AgeType = 'Adult'
+            )
+        OR (
+            Age >= 65
+            AND AgeType = 'Senior'
+            )
+        )
+    )
