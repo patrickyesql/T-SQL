@@ -1,0 +1,117 @@
+--PK
+Select
+   TC.Table_Catalog as DatabaseName,
+   TC.Table_Schema AS TableSchema,
+   TC.Table_Name AS TableName,
+   CCU.Column_Name AS ColumnName,
+   TC.Constraint_Name AS ConstraintName 
+From
+   information_Schema.Table_Constraints TC  
+INNER JOIN
+   Information_Schema.constraint_column_usage CCU  
+      on TC.Constraint_Name=CCU.Constraint_Name  
+      and TC.Table_Name=CCU.Table_Name  
+where
+   Constraint_Type='PRIMARY KEY'
+   
+--FK
+;With CTE_FK AS (
+SELECT Schema_Name(Schema_id) as TableSchemaName,
+  object_name(FK.parent_object_id) ParentTableName,
+  object_name(FK.referenced_object_id) ReferenceTableName,
+  FK.name AS ForeignKeyConstraintName,c.name as ReferencedColumnList,
+  cf.name as ParentColumnName 
+       FROM sys.foreign_keys AS FK
+       INNER JOIN sys.foreign_key_columns AS FKC
+               ON FK.OBJECT_ID = FKC.constraint_object_id
+               INNER JOIN sys.columns c
+          on  c.OBJECT_ID = FKC.referenced_object_id
+                 AND c.column_id = FKC.referenced_column_id
+                 INNER JOIN sys.columns cf
+          on  cf.OBJECT_ID = FKC.parent_object_id
+                 AND cf.column_id = FKC.parent_column_id
+                 )
+                 Select TableSchemaName,
+                 ParentTableName,
+                 ReferenceTableName,
+                 ForeignKeyConstraintName,stuff((
+                 Select ','+ParentColumnName
+                 from CTE_FK i
+                 where i.ForeignKeyConstraintName=o.ForeignKeyConstraintName
+                 and i.TableSchemaName=o.TableSchemaName
+                 and i.ParentTableName=o.ParentTableName
+                 and i.ReferenceTableName=o.ReferenceTableName
+                 for xml path('')), 1, 1, '') ParentColumnList
+                 ,stuff((
+                 Select ','+ReferencedColumnList
+                 from CTE_FK i
+                 where i.ForeignKeyConstraintName=o.ForeignKeyConstraintName
+                 and i.TableSchemaName=o.TableSchemaName
+                 and i.ParentTableName=o.ParentTableName
+                 and i.ReferenceTableName=o.ReferenceTableName
+                 for xml path('')), 1, 1, '') RefColumnList
+                 from CTE_FK o
+                 group by 
+                 tableSchemaName,
+                 ParentTableName,
+                 ReferenceTableName,
+                 ForeignKeyConstraintName
+
+
+--Check
+SELECT DB_Name() AS DBName
+    ,Schema_Name(Schema_id) AS TableSchema
+    ,Object_name(parent_object_id) AS TableName
+    ,o.NAME AS ConstraintName
+FROM sys.objects o
+WHERE type_desc = 'CHECK_CONSTRAINT'
+
+--Default
+ SELECT
+    DB_Name() AS DBName,
+    Schema_name(t.Schema_id)AS SchemaName, 
+    t.name AS TableName, 
+    c.name AS ColumnName, 
+    d.name AS DefaultConstraintName, 
+    d.definition AS DefaultDefinition
+FROM sys.default_constraints d
+INNER JOIN sys.columns c ON
+    d.parent_object_id = c.object_id
+    AND d.parent_column_id = c.column_id
+INNER JOIN sys.tables t ON
+    t.object_id = c.object_id
+    
+--Unique
+;WITH CTE_UQ
+AS (
+    SELECT t.Table_Schema AS TableSchema
+        ,t.table_name AS TableName
+        ,c.column_name AS ColumnName
+        ,t.constraint_name AS UniqueConstraintName
+        ,t.constraint_type AS ConstraintType
+    FROM information_schema.table_constraints t
+    LEFT JOIN information_schema.key_column_usage c 
+    ON t.constraint_catalog = c.constraint_catalog
+        AND t.constraint_schema = c.constraint_schema
+        AND t.constraint_name = c.constraint_name
+    WHERE t.constraint_type = 'UNIQUE'
+    )
+SELECT TableSchema
+    ,TableName
+    ,UniqueConstraintName
+    ,ConstraintType
+    ,stuff((
+            SELECT ',' + ColumnName
+            FROM CTE_UQ i
+            WHERE i.TableSchema = o.TableSchema
+                AND i.TableName = o.TableName
+                AND i.UniqueConstraintName = o.UniqueConstraintName
+            FOR XML path('')
+            ), 1, 1, '') UniqueColumnList
+FROM CTE_UQ o
+GROUP BY TableSchema
+    ,TableName
+    ,UniqueConstraintName
+    ,ConstraintType
+    
+    
