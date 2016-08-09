@@ -1,3 +1,15 @@
+--Check
+ USE YourDatabaseName
+    GO
+    Select 
+    Schema_name(Schema_id) as SchemaName,
+    object_name(Parent_object_id) as TableName,
+    name as ForeignKeyConstraintName,
+    Case When Is_disabled=1 Then 'No'
+    ELSE 'Yes' End as IsEnabled
+    from sys.foreign_keys
+
+--Disable
 USE YourdatabaseName
 go
 -- Drop Foreign Key Constraints Script 
@@ -8,3 +20,15 @@ SELECT distinct 'ALTER TABLE '
 + '[' + FK.name + ']' AS DisableConstraintQuery
  FROM   sys.foreign_keys AS FK
  where is_disabled=0
+
+--Enable
+USE YourdatabaseName
+go
+-- Enable Foreign Key Constraints Script 
+SELECT distinct 'ALTER TABLE ' 
++ '['+ Schema_name(FK.schema_id) 
++ '].['+ OBJECT_NAME(FK.parent_object_id) 
++ ']'+ ' CHECK  CONSTRAINT ' 
++ '[' + FK.name + ']' AS EnableConstraintQuery
+ FROM   sys.foreign_keys AS FK
+ where is_disabled=1
