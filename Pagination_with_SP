@@ -1,0 +1,15 @@
+Create procedure dbo.sp_GetSaleRecordsPerPage
+ @PageNumber int,
+ @RowsPerPage int
+AS 
+BEGIN
+Select 
+[id], [SalePersonFName], [SalePersonLName], [ProductName],
+[ItemsSold], [SoldPrice]
+ from dbo.TotalSale 
+          order by id
+         OFFSET (@PageNumber-1)*@RowsPerPage 
+         ROWS FETCH NEXT @RowsPerPage ROWS ONLY;
+END
+
+EXEC dbo.sp_GetSaleRecordsPerPage 2,4
