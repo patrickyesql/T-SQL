@@ -39,3 +39,10 @@ SELECT Schema_Name(Schema_id) as TableSchemaName,
                  ParentTableName,
                  ReferenceTableName,
                  ForeignKeyConstraintName
+----Specify FK_Table name
+SELECT Schema_Name(Schema_id) as TableSchemaName,
+  object_name(FK.parent_object_id) ParentTableName,
+  object_name(FK.referenced_object_id) ReferenceTableName
+       FROM sys.foreign_keys AS FK
+       WHERE object_name(FK.referenced_object_id)='YourTableName'
+       and Schema_Name(Schema_id)='YourTableSchemaName'
