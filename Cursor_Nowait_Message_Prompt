@@ -1,0 +1,33 @@
+
+http://www.techbrothersit.com/2015/04/sql-server-cursor-types-dynamic-cursor.html
+
+
+--Cursor Script
+
+Declare @CustomerID INT
+Declare @CustomerNAme VARCHAR (100)
+DECLARE @StreetAddress VARCHAR(100)
+DECLARE @City VARCHAR(100)
+DECLARE @State CHAR(2)
+
+--DECLARE A CURSOR
+DECLARE CUR CURSOR
+DYNAMIC
+FOR
+Select CustomerID,CustomerName,StreetAddress,City,State from dbo.Customer
+
+--OPEN CURSOR
+OPEN CUR
+Print 'CURSOR IS OPEN'
+--FETCH NEXT RECORD
+FETCH NEXT FROM CUR INTO @CustomerID,@CustomerNAme,@StreetAddress,@City,@State
+WHILE @@FETCH_STATUS=0
+BEGIN 
+RAISERROR ('',0,1) WITH NOWAIT
+WAITFOR DELAY '00:00:15'
+PRINT CONCAT(@CustomerID,' ',@CustomerNAme,' ',@StreetAddress,' ',@City,' ',@State)
+FETCH NEXT FROM CUR INTO @CustomerID,@CustomerNAme,@StreetAddress,@City,@State
+
+END
+CLOSE CUR
+DEALLOCATE CUR
