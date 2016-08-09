@@ -1,0 +1,22 @@
+Create table dbo.Customer
+ (Id int,
+  FName VARCHAR(50),
+  LName VARCHAR(50),
+  CountryShortName CHAR(2))
+GO
+insert into dbo.Customer
+Values (
+1,'Raza','M','PK'),
+(2,'Rita','John','US'),
+(3,'Sukhi','Singh',Null),
+(4,'James','Smith','CA'),
+(5,'Robert','Ladson','US'),
+(6,'Alice','John','US')
+
+--Return in Random Order
+Select top 3 * From dbo.Customer
+order by NEWID()
+
+
+--SampleTable Function
+Select * From dbo.Customer tablesample (30 percent)||(2 rows)
