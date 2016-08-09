@@ -1,0 +1,34 @@
+USE YourDatabaseName
+GO
+
+CREATE TABLE dbo.Customer (
+    Customerid INT PRIMARY KEY
+    ,FName VARCHAR(100)
+    ,LName VARCHAR(100)
+    ,SSN VARCHAR(10)
+    )
+
+--On update cascade
+    CREATE TABLE dbo.Orders (
+    OrderId INT Identity(1, 1)
+    ,OrderitemName VARCHAR(50)
+    ,OrderItemAmt INT
+    ,Customer_id INT FOREIGN KEY REFERENCES
+     Customer(CustomerId) ON UPDATE CASCADE
+    )
+    --On delete cascade
+     CREATE TABLE dbo.Orders (
+    OrderId INT Identity(1, 1)
+    ,OrderitemName VARCHAR(50)
+    ,OrderItemAmt INT
+    ,Customer_id INT FOREIGN KEY REFERENCES
+     Customer(CustomerId) ON DELETE CASCADE
+    )
+    -- On delete set NULL
+CREATE TABLE dbo.Orders (
+    OrderId INT Identity(1, 1)
+    ,OrderitemName VARCHAR(50)
+    ,OrderItemAmt INT
+    ,Customer_id INT FOREIGN KEY REFERENCES
+     Customer(CustomerId) ON DELETE SET NULL
+    )
