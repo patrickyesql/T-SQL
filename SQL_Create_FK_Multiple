@@ -1,0 +1,28 @@
+USE YourDatabaseName
+GO
+
+CREATE TABLE dbo.Customer (
+    Customerid INT Identity(1,1)
+    ,FName VARCHAR(100) Not Null
+    ,LName VARCHAR(100)
+    ,SSN VARCHAR(10) Not Null,
+    Constraint Pk_FName_SSN Primary Key (FName,SSN)
+    )
+
+
+
+
+Notice that we have use Constraint Constraint_Name Primary Key(Column1, Column2) as highlighted in green to create Composite Primary Key.
+
+Let's create the dbo.Orders table by using below script.
+
+
+CREATE TABLE dbo.Orders (
+    OrderId INT Identity(1, 1)
+    ,OrderitemName VARCHAR(50)
+    ,OrderItemAmt INT
+    ,FirstName VARCHAR(100),
+     SSN VARCHAR(10) Not Null,
+     Constraint Fk_Order_Customer_FName_SSN 
+     FOREIGN KEY (FirstName,SSN) REFERENCES dbo.Customer(FName,SSN)
+    )
